@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from backend.core import BinanceClient
 from backend.entities import ApiConfig
+from backend.exceptions import UnauthorizedError
 from backend.repositories import ConfigRepository
-from backend.utils import UnauthorizedError
 
 
 class ConfigService:

@@ -8,6 +8,12 @@ from sqlalchemy.orm import Session
 
 from backend.core import GridEngine, GridStrategy
 from backend.entities import Grid, GridLevelStatus, GridStatus, OrderSide, OrderStatus, OrderType
+from backend.exceptions import (
+    ConflictError,
+    InsufficientBalanceError,
+    ResourceNotFoundError,
+    UnauthorizedError,
+)
 from backend.models import GridConfig, GridHistoryItem, GridStatistics, GridStatusResponse
 from backend.repositories import (
     GridLevelRepository,
@@ -16,13 +22,7 @@ from backend.repositories import (
     TradeRepository,
 )
 from backend.services import ConfigService
-from backend.utils import (
-    ConflictError,
-    InsufficientBalanceError,
-    ResourceNotFoundError,
-    UnauthorizedError,
-    format_timedelta,
-)
+from backend.utils import format_timedelta
 
 
 class GridService:

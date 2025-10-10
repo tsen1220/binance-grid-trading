@@ -5,8 +5,8 @@ from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 
 from backend.entities import Order, OrderStatus
+from backend.exceptions import ResourceNotFoundError, ValidationError
 from backend.repositories import OrderRepository
-from backend.utils import ResourceNotFoundError, ValidationError
 
 
 class OrderService:

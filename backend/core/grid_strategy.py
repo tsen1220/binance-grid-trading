@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal, getcontext
 from typing import List
 
-from backend.utils import ValidationError
+from backend.exceptions import ValidationError
 
 getcontext().prec = 18
 

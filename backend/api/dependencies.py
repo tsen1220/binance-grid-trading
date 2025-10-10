@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from backend.repositories import get_session
 from backend.services import (
     ConfigService,
     GridService,
@@ -10,7 +11,6 @@ from backend.services import (
     SystemService,
     TradeService,
 )
-from backend.utils import get_session
 
 
 def get_db() -> Session:

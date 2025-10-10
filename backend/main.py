@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from backend.api import account, config, grid, order, symbols, system, trade
 from backend.config import settings
-from backend.utils import (
+from backend.exceptions import (
     ApplicationError,
     BinanceAPIError,
     ConflictError,
@@ -13,8 +13,8 @@ from backend.utils import (
     ResourceNotFoundError,
     UnauthorizedError,
     ValidationError,
-    init_db,
 )
+from backend.repositories import init_db
 
 app = FastAPI(title=settings.app.name, version=settings.app.version)
 
