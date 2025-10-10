@@ -1,0 +1,42 @@
+# Version control
+.git
+.gitignore
+.dockerignore
+
+# OS / editor noise
+.DS_Store
+.idea/
+.vscode/
+
+# Python caches
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+**/*.pyd
+**/*.so
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+*.egg-info/
+**/.venv/
+venv/
+env/
+
+# Node.js dependencies & builds
+**/node_modules/
+**/.turbo/
+**/build/
+
+# Environment & secrets
+.env
+.env.*
+config/config.yaml
+logs/
+
+# Test and docs (not needed in runtime image)
+tests/
+docs/
+
+# Local tooling caches
+tmp/
+dist/

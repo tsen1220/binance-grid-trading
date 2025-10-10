@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0.43
+    container_name: grid_trading_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: binance_grid_trading
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        PYTHON_VERSION: "3.12.11"
+    container_name: grid_trading_backend
+    environment:
+      APP_CONFIG_FILE: /app/backend/config/config.yaml
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/config:/app/backend/config:ro
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

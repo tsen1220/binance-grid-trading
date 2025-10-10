@@ -1,0 +1,62 @@
+# macOS
+.DS_Store
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+htmlcov/
+.coverage
+coverage.xml
+
+# Node.js artifacts
+frontend/node_modules/
+frontend/build/
+frontend/.turbo/
+
+# Environment & local config
+.env
+.env.*
+!.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+backend/config/config.yaml
+backend/config/*.local.yaml
+
+# Logs & runtime data
+logs/*
+!logs/.gitkeep
+*.log
+database/*.db
+*.sqlite
+*.sqlite3
+backend/tests/test_grid.db
+
+# Editor & OS metadata
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker / Compose overrides
+docker-compose.override.yml
+
+# Misc build artefacts
+dist/
+tmp/
+
+# Agents 
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+.claude/
