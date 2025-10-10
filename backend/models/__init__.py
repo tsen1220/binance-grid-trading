@@ -2,8 +2,6 @@ from .base import APIErrorResponse, APIResponse
 from .binance import (
     BalanceItem,
     BalanceResponse,
-    BinanceConfigRequest,
-    BinanceConfigResponse,
     SymbolItem,
     SymbolsResponse,
     TestConnectionResponse,
@@ -29,8 +27,6 @@ __all__ = [
     "APIResponse",
     "APIErrorResponse",
     # Binance
-    "BinanceConfigRequest",
-    "BinanceConfigResponse",
     "TestConnectionResponse",
     "BalanceItem",
     "BalanceResponse",

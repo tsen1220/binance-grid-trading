@@ -59,10 +59,10 @@ def get_status(grid_id: str | None = Query(default=None), service: GridService =
 
 
 @router.get("/history", response_model=GridHistoryResponse)
-def get_history(
+def get_histories(
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=100),
     service: GridService = Depends(get_grid_service),
 ) -> GridHistoryResponse:
-    history_items, total = service.get_history(page=page, limit=limit)
+    history_items, total = service.get_histories(page=page, limit=limit)
     return GridHistoryResponse(success=True, total=total, page=page, limit=limit, grids=history_items)

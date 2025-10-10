@@ -3,6 +3,7 @@ from .grid_service import GridService
 from .order_service import OrderService
 from .system_service import SystemService
 from .trade_service import TradeService
+from .websocket_monitor_service import WebSocketMonitorService
 
 __all__ = [
     "ConfigService",
@@ -10,4 +11,5 @@ __all__ = [
     "OrderService",
     "SystemService",
     "TradeService",
+    "WebSocketMonitorService",
 ]

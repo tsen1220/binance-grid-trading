@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -15,7 +15,7 @@ class SystemService:
         self.session = session
         self.config_service = config_service
         self.grid_repository = GridRepository(session)
-        self._started_at = datetime.utcnow()
+        self._started_at = datetime.now(timezone.utc)
 
     def get_status(self) -> dict:
         active_grid = self.grid_repository.find_active_grid()
@@ -27,7 +27,7 @@ class SystemService:
             binance_connected = False
             testnet_mode = False
 
-        uptime = format_timedelta(datetime.utcnow() - self._started_at)
+        uptime = format_timedelta(datetime.now(timezone.utc) - self._started_at)
         return {
             "status": "running",
             "uptime": uptime,
@@ -38,7 +38,7 @@ class SystemService:
         }
 
     def health(self) -> dict:
-        return {"status": "healthy", "timestamp": datetime.utcnow()}
+        return {"status": "healthy", "timestamp": datetime.now(timezone.utc)}
 
 
 __all__ = ["SystemService"]

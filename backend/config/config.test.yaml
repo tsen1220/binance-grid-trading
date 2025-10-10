@@ -2,16 +2,14 @@ app:
   name: "Binance Grid Trading Backend"
   version: "1.0.0"
   log_level: "INFO"
-  log_dir: "logs"
 
-mysql:
-  host: "mysql"
-  port: 3306
-  user: "root"
-  password: "root"
-  database: "binance_grid_trading"
-  charset: "utf8mb4"
+database:
+  path: "data/grid_trading.db"
   echo: false
 
-testing:
-  database_url: "sqlite:///./backend/tests/test_grid.db"
+binance:
+  api_key: null
+  api_secret: null
+  testnet: true
+  binance_url: "https://testnet.binance.vision"
+  websocket_url: "wss://testnet.binance.vision"

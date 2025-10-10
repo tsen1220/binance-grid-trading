@@ -14,7 +14,7 @@ class TradeRepository(BaseRepository[Trade]):
     def __init__(self, session: Session) -> None:
         super().__init__(session, Trade)
 
-    def paginate(self, *, page: int, limit: int, grid_id: Optional[str] = None, symbol: Optional[str] = None, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> Tuple[list[Trade], int]:
+    def get_trades(self, *, page: int, limit: int, grid_id: Optional[str] = None, symbol: Optional[str] = None, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> Tuple[list[Trade], int]:
         offset = (page - 1) * limit
         stmt: Select[Trade] = select(Trade)
         conditions = []

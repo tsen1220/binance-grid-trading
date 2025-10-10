@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 
-from pydantic import BaseModel, conint, validator
+from pydantic import BaseModel, conint, field_validator
 
 from .base import APIResponse
 
@@ -14,7 +14,7 @@ class GridConfig(BaseModel):
     grid_count: conint(ge=5, le=100)
     total_investment: Decimal
 
-    @validator("trading_pair")
+    @field_validator("trading_pair")
     def uppercase_symbol(cls, value: str) -> str:
         return value.upper()
 

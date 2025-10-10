@@ -6,17 +6,6 @@ from pydantic import BaseModel
 from .base import APIResponse
 
 
-class BinanceConfigRequest(BaseModel):
-    api_key: str
-    api_secret: str
-    testnet: bool = True
-
-
-class BinanceConfigResponse(APIResponse):
-    message: str
-    testnet: bool
-
-
 class TestConnectionResponse(APIResponse):
     connected: bool
     account_type: str = "SPOT"
@@ -40,6 +29,8 @@ class SymbolItem(BaseModel):
     status: str
     min_qty: Decimal
     min_notional: Decimal
+    step_size: Decimal
+    tick_size: Decimal
     price_precision: int
     qty_precision: int
 

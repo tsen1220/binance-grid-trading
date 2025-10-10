@@ -12,7 +12,7 @@ router = APIRouter(prefix="/trades", tags=["trades"])
 
 
 @router.get("", response_model=TradesResponse)
-def list_trades(
+def get_trades(
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=100),
     grid_id: str | None = Query(default=None),
@@ -21,7 +21,7 @@ def list_trades(
     end_date: datetime | None = Query(default=None),
     service: TradeService = Depends(get_trade_service),
 ) -> TradesResponse:
-    trades, total = service.list_trades(
+    trades, total = service.get_trades(
         page=page,
         limit=limit,
         grid_id=grid_id,

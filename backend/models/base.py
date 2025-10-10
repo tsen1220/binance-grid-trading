@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class APIResponse(BaseModel):
     success: bool = True
+    message: Optional[str] = None
 
 
 class APIErrorResponse(APIResponse):

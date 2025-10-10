@@ -12,13 +12,9 @@ from backend.config import settings
 
 
 def _make_engine(url: str):
-    engine_kwargs: dict[str, Any] = {"echo": settings.mysql.echo, "future": True}
+    engine_kwargs: dict[str, Any] = {"echo": settings.database.echo, "future": True}
     if url.startswith("sqlite"):
         engine_kwargs["connect_args"] = {"check_same_thread": False}
-    else:
-        engine_kwargs["pool_pre_ping"] = True
-    if url.startswith("mysql"):
-        engine_kwargs.update({"pool_recycle": 1800, "pool_size": 10, "max_overflow": 20})
     return create_engine(url, **engine_kwargs)
 
 

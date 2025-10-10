@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import List, Optional, TYPE_CHECKING
 from uuid import uuid4
 
@@ -28,12 +28,15 @@ class Order(Base):
     quantity: Mapped[float] = mapped_column(Numeric(20, 8))
     filled_quantity: Mapped[float] = mapped_column(Numeric(20, 8), default=0)
     status: Mapped[OrderStatus] = mapped_column(SAEnum(OrderStatus), default=OrderStatus.NEW)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    filled_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
+    filled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     commission: Mapped[Optional[float]] = mapped_column(Numeric(20, 8), nullable=True)
     commission_asset: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
     binance_order_id: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    paired_order_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("orders.id", ondelete="SET NULL"), nullable=True)
 
     grid: Mapped["Grid"] = relationship(back_populates="orders")
     trades: Mapped[List["Trade"]] = relationship(back_populates="order", cascade="all, delete-orphan")

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import List, Optional, TYPE_CHECKING
 from uuid import uuid4
 
@@ -29,9 +29,9 @@ class Grid(Base):
     investment_per_grid: Mapped[float] = mapped_column(Numeric(20, 8))
     status: Mapped[GridStatus] = mapped_column(SAEnum(GridStatus), default=GridStatus.RUNNING)
     runtime_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    stopped_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    stopped_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     levels: Mapped[List["GridLevel"]] = relationship(back_populates="grid", cascade="all, delete-orphan")
     orders: Mapped[List["Order"]] = relationship(back_populates="grid", cascade="all, delete-orphan")

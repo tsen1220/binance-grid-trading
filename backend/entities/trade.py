@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
@@ -28,7 +28,7 @@ class Trade(Base):
     quote_quantity: Mapped[float] = mapped_column(Numeric(20, 8))
     commission: Mapped[float | None] = mapped_column(Numeric(20, 8), nullable=True)
     commission_asset: Mapped[str | None] = mapped_column(String(16), nullable=True)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     is_maker: Mapped[bool] = mapped_column(Boolean, default=False)
 
     grid: Mapped["Grid"] = relationship(back_populates="trades")

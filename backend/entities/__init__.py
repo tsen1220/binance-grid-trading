@@ -1,4 +1,3 @@
-from .api_config import ApiConfig
 from .base import Base
 from .enums import (
     GridLevelStatus,
@@ -14,7 +13,6 @@ from .order import Order
 from .trade import Trade
 
 __all__ = [
-    "ApiConfig",
     "Base",
     "Grid",
     "GridLevel",

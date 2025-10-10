@@ -18,7 +18,7 @@ class BaseRepository(Generic[T]):
     def find(self, identifier: Any) -> Optional[T]:
         return self.session.get(self.model, identifier)
 
-    def find_all(self, *, filters: Optional[Dict[str, Any]] = None, order_by: Optional[Sequence[Any]] = None, limit: Optional[int] = None, offset: Optional[int] = None) -> List[T]:
+    def get(self, *, filters: Optional[Dict[str, Any]] = None, order_by: Optional[Sequence[Any]] = None, limit: Optional[int] = None, offset: Optional[int] = None) -> List[T]:
         stmt: Select[Any] = select(self.model)
         if filters:
             for field, value in filters.items():

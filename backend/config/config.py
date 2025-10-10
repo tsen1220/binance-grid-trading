@@ -18,40 +18,34 @@ class AppConfig:
     name: str
     version: str
     log_level: str
-    log_dir: Path
 
 
 @dataclass(frozen=True)
-class MySQLConfig:
-    host: str
-    port: int
-    user: str
-    password: str
-    database: str
-    charset: str
+class DatabaseConfig:
+    path: Path
     echo: bool
 
     def build_database_url(self) -> str:
-        return (
-            f"mysql+mysqlconnector://{self.user}:{self.password}@"
-            f"{self.host}:{self.port}/{self.database}?charset={self.charset}"
-        )
+        return f"sqlite:///{self.path}"
 
 
 @dataclass(frozen=True)
-class TestingConfig:
-    database_url: Optional[str] = None
-
+class BinanceConfig:
+    api_key: Optional[str]
+    api_secret: Optional[str]
+    testnet: bool
+    binance_url: str
+    websocket_url: str
 
 @dataclass(frozen=True)
 class Settings:
     app: AppConfig
-    mysql: MySQLConfig
-    testing: TestingConfig
+    database: DatabaseConfig
+    binance: BinanceConfig
 
     @property
     def database_url(self) -> str:
-        return self.testing.database_url or self.mysql.build_database_url()
+        return self.database.build_database_url()
 
 
 def load_config(config_path: Optional[Path] = None) -> Settings:
@@ -72,34 +66,32 @@ def load_config(config_path: Optional[Path] = None) -> Settings:
         raw = yaml.safe_load(fp) or {}
 
     app_cfg = raw.get("app", {})
-    mysql_cfg = raw.get("mysql", {})
-    testing_cfg = raw.get("testing", {})
+    db_cfg = raw.get("database", {})
+    binance_cfg = raw.get("binance", {})
 
-    raw_log_dir = Path(app_cfg.get("log_dir", "logs"))
-    if raw_log_dir.is_absolute():
-        log_dir = raw_log_dir
+    raw_db_path = Path(db_cfg.get("path", "data/grid_trading.db"))
+    if raw_db_path.is_absolute():
+        db_path = raw_db_path
     else:
-        log_dir = (path.parent / raw_log_dir).resolve()
-    log_dir.mkdir(parents=True, exist_ok=True)
+        db_path = (path.parent.parent / raw_db_path).resolve()
+    db_path.parent.mkdir(parents=True, exist_ok=True)
 
     return Settings(
         app=AppConfig(
             name=app_cfg.get("name", "Binance Grid Trading Backend"),
             version=app_cfg.get("version", "1.0.0"),
             log_level=app_cfg.get("log_level", "INFO"),
-            log_dir=log_dir,
         ),
-        mysql=MySQLConfig(
-            host=mysql_cfg.get("host", "localhost"),
-            port=int(mysql_cfg.get("port", 3306)),
-            user=mysql_cfg.get("user", "grid_trading"),
-            password=mysql_cfg.get("password", "dev_password"),
-            database=mysql_cfg.get("database", "binance_grid_trading"),
-            charset=mysql_cfg.get("charset", "utf8mb4"),
-            echo=bool(mysql_cfg.get("echo", False)),
+        database=DatabaseConfig(
+            path=db_path,
+            echo=bool(db_cfg.get("echo", False)),
         ),
-        testing=TestingConfig(
-            database_url=testing_cfg.get("database_url"),
+        binance=BinanceConfig(
+            api_key=binance_cfg.get("api_key"),
+            api_secret=binance_cfg.get("api_secret"),
+            testnet=bool(binance_cfg.get("testnet", True)),
+            binance_url=binance_cfg.get("binance_url", "https://testnet.binance.vision"),
+            websocket_url=binance_cfg.get("websocket_url", "wss://testnet.binance.vision"),
         ),
     )
 

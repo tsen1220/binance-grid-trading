@@ -10,14 +10,14 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 
 
 @router.get("", response_model=OrdersResponse)
-def list_orders(
+def get_orders(
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=100),
     grid_id: str | None = Query(default=None),
     status: str | None = Query(default=None),
     service: OrderService = Depends(get_order_service),
 ) -> OrdersResponse:
-    orders, total = service.list_orders(page=page, limit=limit, grid_id=grid_id, status=status)
+    orders, total = service.get_orders(page=page, limit=limit, grid_id=grid_id, status=status)
     return OrdersResponse(success=True, total=total, page=page, limit=limit, orders=orders)
 
 

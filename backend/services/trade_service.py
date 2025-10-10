@@ -14,7 +14,7 @@ class TradeService:
         self.session = session
         self.repository = TradeRepository(session)
 
-    def list_trades(
+    def get_trades(
         self,
         *,
         page: int,
@@ -24,7 +24,7 @@ class TradeService:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
     ) -> Tuple[list[Trade], int]:
-        trades, total = self.repository.paginate(
+        trades, total = self.repository.get_trades(
             page=page,
             limit=limit,
             grid_id=grid_id,

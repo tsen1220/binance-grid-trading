@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from backend.api import account, config, grid, order, symbols, system, trade
 from backend.config import settings
-from backend.utils import (
+from backend.exceptions import (
     ApplicationError,
     BinanceAPIError,
     ConflictError,
@@ -13,15 +15,42 @@ from backend.utils import (
     ResourceNotFoundError,
     UnauthorizedError,
     ValidationError,
-    init_db,
 )
+from backend.repositories import init_db
+from backend.services import ConfigService, WebSocketMonitorService
 
-app = FastAPI(title=settings.app.name, version=settings.app.version)
+# Global WebSocket monitor instance
+_ws_monitor = None
 
 
-@app.on_event("startup")
-def on_startup() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _ws_monitor
+
+    # Initialize database
     init_db()
+
+    # Start WebSocket monitoring for real-time order updates
+    try:
+        config_service = ConfigService()
+        _ws_monitor = WebSocketMonitorService(config_service)
+        await _ws_monitor.start()
+    except Exception as e:
+        # Log error but don't crash the application
+        # The system can still work with REST API polling if WebSocket fails
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to start WebSocket monitor: {e}", exc_info=True)
+
+    yield
+
+    # Cleanup on shutdown
+    if _ws_monitor:
+        await _ws_monitor.stop()
+
+
+app = FastAPI(title=settings.app.name, version=settings.app.version, lifespan=lifespan)
 
 
 @app.exception_handler(ApplicationError)

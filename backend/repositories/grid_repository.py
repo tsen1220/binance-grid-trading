@@ -23,7 +23,7 @@ class GridRepository(BaseRepository[Grid]):
         result = self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    def paginate_history(self, *, page: int, limit: int) -> Tuple[List[Grid], int]:
+    def get_histories(self, *, page: int, limit: int) -> Tuple[List[Grid], int]:
         offset = (page - 1) * limit
         stmt = (
             select(Grid)
