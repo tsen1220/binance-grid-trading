@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
@@ -16,12 +18,14 @@ from backend.exceptions import (
 )
 from backend.repositories import init_db
 
-app = FastAPI(title=settings.app.name, version=settings.app.version)
 
-
-@app.on_event("startup")
-def on_startup() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     init_db()
+    yield
+
+
+app = FastAPI(title=settings.app.name, version=settings.app.version, lifespan=lifespan)
 
 
 @app.exception_handler(ApplicationError)
