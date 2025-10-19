@@ -12,4 +12,4 @@ binance:
   api_secret: null
   testnet: true
   binance_url: "https://testnet.binance.vision"
-  websocket_url: "wss://testnet.binance.vision"
+  websocket_url: "wss://stream.testnet.binance.vision"
