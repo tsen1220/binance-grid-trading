@@ -30,47 +30,54 @@ class WebSocketMonitorService:
         self.running = False
         self.keepalive_task: Optional[asyncio.Task] = None
         self.monitor_task: Optional[asyncio.Task] = None
+        self.reconnect_task: Optional[asyncio.Task] = None
+        self._lock = asyncio.Lock()  # Lock to prevent concurrent operations
 
     async def start(self) -> None:
         """Start WebSocket monitoring."""
-        if self.running:
-            logger.warning("WebSocket monitor is already running")
-            return
+        async with self._lock:
+            if self.running:
+                logger.warning("WebSocket monitor is already running")
+                return
 
-        try:
-            # Create Binance client and get listen key
-            client = self.config_service.create_client()
-            self.listen_key = client.create_listen_key()
-            logger.info(f"Created listen key: {self.listen_key}")
+            try:
+                # Create Binance client and get listen key
+                client = self.config_service.create_client()
+                self.listen_key = client.create_listen_key()
+                logger.info(f"Created listen key: {self.listen_key}")
 
-            # Get WebSocket URL from config
-            from backend.config import settings
+                # Get WebSocket URL from config
+                from backend.config import settings
 
-            ws_base_url = settings.binance.websocket_url
-            ws_url = f"{ws_base_url}/ws/{self.listen_key}"
+                ws_base_url = settings.binance.websocket_url
+                ws_url = f"{ws_base_url}/ws/{self.listen_key}"
 
-            # Connect to WebSocket
-            self.websocket = await websockets.connect(ws_url)
-            logger.info(f"Connected to WebSocket: {ws_url}")
+                # Connect to WebSocket
+                self.websocket = await websockets.connect(ws_url)
+                logger.info(f"Connected to WebSocket: {ws_url}")
 
-            self.running = True
+                self.running = True
 
-            # Start keepalive task (ping every 30 minutes)
-            self.keepalive_task = asyncio.create_task(self._keepalive_loop())
+                # Start keepalive task (ping every 30 minutes)
+                self.keepalive_task = asyncio.create_task(self._keepalive_loop())
 
-            # Start monitoring task
-            self.monitor_task = asyncio.create_task(self._monitor_loop())
+                # Start monitoring task with auto-reconnect
+                self.monitor_task = asyncio.create_task(self._monitor_with_reconnect())
 
-        except Exception as e:
-            logger.error(f"Failed to start WebSocket monitor: {e}", exc_info=True)
-            await self.stop()
-            raise
+            except Exception as e:
+                logger.error(f"Failed to start WebSocket monitor: {e}", exc_info=True)
+                await self._cleanup()
+                raise
 
     async def stop(self) -> None:
         """Stop WebSocket monitoring."""
         logger.info("Stopping WebSocket monitor...")
         self.running = False
+        await self._cleanup()
+        logger.info("WebSocket monitor stopped")
 
+    async def _cleanup(self) -> None:
+        """Clean up resources (websocket, tasks, listen key)."""
         # Cancel tasks
         if self.keepalive_task:
             self.keepalive_task.cancel()
@@ -78,6 +85,7 @@ class WebSocketMonitorService:
                 await self.keepalive_task
             except asyncio.CancelledError:
                 pass
+            self.keepalive_task = None
 
         if self.monitor_task:
             self.monitor_task.cancel()
@@ -85,10 +93,14 @@ class WebSocketMonitorService:
                 await self.monitor_task
             except asyncio.CancelledError:
                 pass
+            self.monitor_task = None
 
         # Close WebSocket connection
         if self.websocket:
-            await self.websocket.close()
+            try:
+                await self.websocket.close()
+            except Exception:
+                pass
             self.websocket = None
 
         # Close listen key
@@ -101,7 +113,27 @@ class WebSocketMonitorService:
                 logger.error(f"Failed to close listen key: {e}")
             self.listen_key = None
 
-        logger.info("WebSocket monitor stopped")
+    async def _monitor_with_reconnect(self) -> None:
+        """Monitor loop with automatic reconnection on disconnect."""
+        reconnect_delay = 5  # seconds
+
+        while self.running:
+            try:
+                # Run the monitor loop (this will block until disconnect)
+                await self._monitor_loop()
+
+                # If we exit the loop and still running, reconnect
+                if self.running:
+                    logger.warning(f"Monitor loop exited, reconnecting in {reconnect_delay} seconds...")
+                    await asyncio.sleep(reconnect_delay)
+                    await self._reconnect()
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in monitor with reconnect: {e}", exc_info=True)
+                if self.running:
+                    await asyncio.sleep(reconnect_delay)
 
     async def _keepalive_loop(self) -> None:
         """Keep the listen key alive by pinging every 30 minutes."""
@@ -134,23 +166,57 @@ class WebSocketMonitorService:
             except asyncio.CancelledError:
                 break
             except websockets.exceptions.ConnectionClosed:
-                logger.warning("WebSocket connection closed, attempting to reconnect...")
-                await self._reconnect()
+                logger.warning("WebSocket connection closed")
+                # Don't call reconnect directly - exit loop and let it be handled externally
+                # This prevents multiple concurrent recv() calls
+                break
             except Exception as e:
                 logger.error(f"Error in monitor loop: {e}", exc_info=True)
+                # Don't continue the loop on error to avoid rapid error loops
+                await asyncio.sleep(1)
 
     async def _reconnect(self) -> None:
-        """Reconnect to WebSocket after connection loss."""
-        if not self.running:
-            return
+        """Reconnect to WebSocket after connection loss.
 
-        try:
-            logger.info("Reconnecting to WebSocket...")
-            await self.stop()
-            await asyncio.sleep(5)  # Wait 5 seconds before reconnecting
-            await self.start()
-        except Exception as e:
-            logger.error(f"Reconnection failed: {e}", exc_info=True)
+        This creates a new WebSocket connection with a new listen key.
+        Should only be called from _monitor_with_reconnect().
+        """
+        async with self._lock:
+            try:
+                logger.info("Reconnecting to WebSocket...")
+
+                # Close old websocket if exists
+                if self.websocket:
+                    try:
+                        await self.websocket.close()
+                    except Exception:
+                        pass
+                    self.websocket = None
+
+                # Close old listen key if exists
+                if self.listen_key:
+                    try:
+                        client = self.config_service.create_client()
+                        client.close_listen_key(self.listen_key)
+                    except Exception as e:
+                        logger.error(f"Failed to close old listen key: {e}")
+                    self.listen_key = None
+
+                # Create new connection
+                client = self.config_service.create_client()
+                self.listen_key = client.create_listen_key()
+                logger.info(f"Created new listen key: {self.listen_key}")
+
+                from backend.config import settings
+                ws_base_url = settings.binance.websocket_url
+                ws_url = f"{ws_base_url}/ws/{self.listen_key}"
+
+                self.websocket = await websockets.connect(ws_url)
+                logger.info(f"Reconnected to WebSocket: {ws_url}")
+
+            except Exception as e:
+                logger.error(f"Reconnection failed: {e}", exc_info=True)
+                raise
 
     async def _process_message(self, data: dict) -> None:
         """Process incoming WebSocket message.
@@ -164,9 +230,9 @@ class WebSocketMonitorService:
             # Order update event
             await self._handle_execution_report(data)
         elif event_type == "listenKeyExpired":
-            # Listen key expired, need to reconnect
-            logger.warning("Listen key expired, reconnecting...")
-            await self._reconnect()
+            # Listen key expired, stop monitoring
+            logger.warning("Listen key expired, stopping monitor...")
+            self.running = False
         else:
             # Log other event types for debugging
             logger.debug(f"Received event: {event_type}")
