@@ -90,7 +90,31 @@ class BinanceClient:
             else:
                 raise ValueError(f"Unsupported HTTP method: {method}")
 
-            response.raise_for_status()
+            # Check for HTTP errors and include Binance API error details
+            if response.status_code >= 400:
+                error_detail = ""
+                try:
+                    error_data = response.json()
+                    binance_code = error_data.get("code", "N/A")
+                    binance_msg = error_data.get("msg", "N/A")
+                    error_detail = f" [Binance Error {binance_code}: {binance_msg}]"
+                    logger.error(
+                        f"Binance API error - Method: {method}, Endpoint: {endpoint}, "
+                        f"Status: {response.status_code}, Code: {binance_code}, Message: {binance_msg}"
+                    )
+                except Exception:
+                    error_detail = f" [Response body: {response.text}]"
+                    logger.error(
+                        f"Binance API error - Method: {method}, Endpoint: {endpoint}, "
+                        f"Status: {response.status_code}, Body: {response.text}"
+                    )
+
+                raise httpx.HTTPStatusError(
+                    f"Binance API request failed: {response.status_code}{error_detail}",
+                    request=response.request,
+                    response=response
+                )
+
             return response.json()
 
     def test_connection(self) -> bool:
