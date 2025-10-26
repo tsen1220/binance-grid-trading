@@ -33,6 +33,39 @@ class WebSocketMonitorService:
         self.reconnect_task: Optional[asyncio.Task] = None
         self._lock = asyncio.Lock()  # Lock to prevent concurrent operations
 
+        # Connection status tracking
+        self.connected_at: Optional[float] = None
+        self.last_message_at: Optional[float] = None
+        self.reconnect_count: int = 0
+        self.is_connected: bool = False
+
+    def get_status(self) -> dict:
+        """Get current WebSocket connection status.
+
+        Returns:
+            dict: Connection status including:
+                - running: Whether monitor is running
+                - is_connected: Whether WebSocket is currently connected
+                - connected_at: Unix timestamp when connected (None if not connected)
+                - last_message_at: Unix timestamp of last received message
+                - reconnect_count: Number of reconnections since start
+                - uptime: Time since connection established (seconds)
+        """
+        import time
+
+        uptime = None
+        if self.connected_at and self.is_connected:
+            uptime = time.time() - self.connected_at
+
+        return {
+            "running": self.running,
+            "is_connected": self.is_connected,
+            "connected_at": self.connected_at,
+            "last_message_at": self.last_message_at,
+            "reconnect_count": self.reconnect_count,
+            "uptime": uptime,
+        }
+
     async def start(self) -> None:
         """Start WebSocket monitoring."""
         async with self._lock:
@@ -56,6 +89,10 @@ class WebSocketMonitorService:
                 self.websocket = await websockets.connect(ws_url)
                 logger.info(f"Connected to WebSocket: {ws_url}")
 
+                # Update connection status
+                import time
+                self.connected_at = time.time()
+                self.is_connected = True
                 self.running = True
 
                 # Start keepalive task (ping every 30 minutes)
@@ -73,6 +110,7 @@ class WebSocketMonitorService:
         """Stop WebSocket monitoring."""
         logger.info("Stopping WebSocket monitor...")
         self.running = False
+        self.is_connected = False
         await self._cleanup()
         logger.info("WebSocket monitor stopped")
 
@@ -154,11 +192,16 @@ class WebSocketMonitorService:
 
     async def _monitor_loop(self) -> None:
         """Monitor WebSocket messages and process order updates."""
+        import time
+
         while self.running and self.websocket:
             try:
                 # Wait for message from WebSocket
                 message = await self.websocket.recv()
                 data = json.loads(message)
+
+                # Update last message timestamp
+                self.last_message_at = time.time()
 
                 # Process the message
                 await self._process_message(data)
@@ -167,6 +210,7 @@ class WebSocketMonitorService:
                 break
             except websockets.exceptions.ConnectionClosed:
                 logger.warning("WebSocket connection closed")
+                self.is_connected = False
                 # Don't call reconnect directly - exit loop and let it be handled externally
                 # This prevents multiple concurrent recv() calls
                 break
@@ -213,6 +257,12 @@ class WebSocketMonitorService:
 
                 self.websocket = await websockets.connect(ws_url)
                 logger.info(f"Reconnected to WebSocket: {ws_url}")
+
+                # Update connection status
+                import time
+                self.connected_at = time.time()
+                self.is_connected = True
+                self.reconnect_count += 1
 
             except Exception as e:
                 logger.error(f"Reconnection failed: {e}", exc_info=True)

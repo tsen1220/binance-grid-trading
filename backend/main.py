@@ -23,6 +23,11 @@ from backend.services import ConfigService, WebSocketMonitorService
 _ws_monitor = None
 
 
+def get_ws_monitor() -> WebSocketMonitorService | None:
+    """Get the global WebSocket monitor instance."""
+    return _ws_monitor
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _ws_monitor

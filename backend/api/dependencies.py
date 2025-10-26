@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
@@ -11,6 +13,9 @@ from backend.services import (
     SystemService,
     TradeService,
 )
+
+if TYPE_CHECKING:
+    from backend.services import WebSocketMonitorService
 
 
 def get_db() -> Session:
@@ -33,5 +38,16 @@ def get_trade_service(db: Session = Depends(get_db)) -> TradeService:
     return TradeService(db)
 
 
-def get_system_service(db: Session = Depends(get_db), config_service: ConfigService = Depends(get_config_service)) -> SystemService:
-    return SystemService(db, config_service)
+def get_ws_monitor() -> WebSocketMonitorService | None:
+    """Get the global WebSocket monitor instance."""
+    from backend.main import get_ws_monitor as _get_ws_monitor
+
+    return _get_ws_monitor()
+
+
+def get_system_service(
+    db: Session = Depends(get_db),
+    config_service: ConfigService = Depends(get_config_service),
+    ws_monitor: WebSocketMonitorService | None = Depends(get_ws_monitor),
+) -> SystemService:
+    return SystemService(db, config_service, ws_monitor)
