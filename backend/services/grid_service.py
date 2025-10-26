@@ -284,16 +284,31 @@ class GridService:
             "total_investment": Decimal(grid.total_investment),
         }
 
-        level_snapshots = [
-            {
+        level_snapshots = []
+        for level in levels:
+            buy_order = next((order for order in orders if order.grid_level == level.level_index and order.side == OrderSide.BUY), None)
+            sell_order = next((order for order in orders if order.grid_level == level.level_index and order.side == OrderSide.SELL), None)
+
+            # Calculate status based on actual order states
+            buy_pending = buy_order and buy_order.status in {OrderStatus.NEW, OrderStatus.PARTIALLY_FILLED}
+            sell_pending = sell_order and sell_order.status in {OrderStatus.NEW, OrderStatus.PARTIALLY_FILLED}
+
+            if buy_pending and sell_pending:
+                status = GridLevelStatus.BOTH_PENDING.value
+            elif buy_pending:
+                status = GridLevelStatus.BUY_PENDING.value
+            elif sell_pending:
+                status = GridLevelStatus.SELL_PENDING.value
+            else:
+                status = GridLevelStatus.IDLE.value
+
+            level_snapshots.append({
                 "grid_level": level.level_index,
                 "price": Decimal(level.price),
-                "buy_order_id": next((order.id for order in orders if order.grid_level == level.level_index and order.side == OrderSide.BUY), None),
-                "sell_order_id": next((order.id for order in orders if order.grid_level == level.level_index and order.side == OrderSide.SELL), None),
-                "status": level.status.value,
-            }
-            for level in levels
-        ]
+                "buy_order_id": buy_order.id if buy_order else None,
+                "sell_order_id": sell_order.id if sell_order else None,
+                "status": status,
+            })
 
         try:
             client = self.config_service.create_client()
